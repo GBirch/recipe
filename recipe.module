@@ -14,6 +14,9 @@ use Drupal\field\FieldConfigInterface;
 use Drupal\node\Entity\NodeType;
 use Drupal\node\NodeTypeInterface;
 
+// Default for smallest fraction of a unit: 1/8.
+const RECIPE_MAX_ACCURACY = 0.125;
+
 /**
  * Implements hook_theme().
  */
@@ -245,9 +248,14 @@ function recipe_node_view(array &$build, EntityInterface $entity, EntityViewDisp
 
   // Display the recipe yield by combining the recipe_yield_amount and
   // recipe_yield_unit fields. Do not display if the yield_amount is NULL.
-  if ($entity->recipe_yield_amount->value != NULL) {
+  $adjusted_yield = recipe_get_yield();
+  if ($entity->recipe_yield_amount->value != NULL || ($adjusted_yield && $entity->recipe_yield_unit->value != NULL)) {
+    $yield_amount = $entity->recipe_yield_amount->value;
+    if ($adjusted_yield) {
+      $yield_amount = $adjusted_yield;
+    }
     $arguments = [
-      '@yield_amount' => $entity->recipe_yield_amount->value,
+      '@yield_amount' => $yield_amount,
       '@yield_unit' => $entity->recipe_yield_unit->value,
     ];
     $build['recipe_yield'] = [
@@ -284,6 +292,17 @@ function recipe_node_view(array &$build, EntityInterface $entity, EntityViewDisp
       );
     }
   }*/
+}
+
+function recipe_get_yield() {
+  // Gets recipe-yield parameter from a variety of sources.
+  $yield = \Drupal::request()->get('recipe-yield');
+  // Non-numeric and zero-value yields are ignored.
+  if (!is_numeric($yield) || !floatval($yield)) {
+    return NULL;
+  }
+  // For sanity we want a positive number not more than 100.
+  return min(abs(floatval($yield)), 100);
 }
 
 /**

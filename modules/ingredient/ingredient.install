@@ -1,0 +1,46 @@
+<?php
+
+/**
+ * @file
+ * Contains functions for updating Ingredient module (part of Recipe).
+ */
+
+use Drupal\Core\Database\Database;
+
+/**
+ * Update unit configuration.
+ */
+function ingredient_update_8001() {
+  // Retrieve the unit configuration.
+  $config_factory = \Drupal::configFactory();
+  $config = $config_factory->getEditable('ingredient.units');
+
+  // Fix keys in the us and common unit sets.
+  $us_units = $config->get('unit_sets.us.units');
+  $pint_data = $us_units["us liquid pint'"];
+  unset($us_units["us liquid pint'"]);
+  $us_units['us liquid pint'] = $pint_data;
+  $config->set('unit_sets.us.units', $us_units);
+
+  $common_units = $config->get('unit_sets.common.units');
+  $loaf_data = $common_units['load'];
+  unset($common_units['load']);
+  $common_units['loaf'] = $loaf_data;
+  $config->set('unit_sets.common.units', $common_units);
+
+  // Save new configuration.
+  $config->save(TRUE);
+
+  // Update any existing ingredients that used bad units.
+  $pints_updated = Database::getConnection()->update('node__recipe_ingredient')
+    ->fields(['recipe_ingredient_unit_key' => 'us liquid pint'])
+    ->condition('recipe_ingredient_unit_key', "us liquid pint'", '=')
+    ->execute();
+  $loaves_updated = Database::getConnection()->update('node__recipe_ingredient')
+    ->fields(['recipe_ingredient_unit_key' => 'loaf'])
+    ->condition('recipe_ingredient_unit_key', "load", '=')
+    ->execute();
+
+  return t('Updated ingredient unit sets and fixed @ct existing ingredient(s).',
+    ['@ct' => ($pints_updated + $loaves_updated)]);
+}

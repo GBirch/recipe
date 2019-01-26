@@ -8,36 +8,67 @@ unit_sets:
         plural: 'cups'
         abbreviation: 'c'
         aliases: {  }
-      us liquid pint':
+        scaling:
+          max_accuracy: 0.125
+      us liquid pint:
         name: 'pint'
         plural: 'pints'
         abbreviation: 'pt'
         aliases: {  }
+        scaling:
+          smaller_unit: 'cup'
+          smaller_multiple: 2
+          larger_unit: 'us liquid quart'
+          larger_divisor: 2
+          scale_up_at: 4
       us liquid quart:
         name: 'quart'
         plural: 'quarts'
         abbreviation: 'q'
         aliases: {  }
+        scaling:
+          smaller_unit: 'cup'
+          smaller_multiple: 4
+          larger_unit: 'us gallon'
+          larger_divisor: 4
+          scale_up_at: 6
       us gallon:
         name: 'gallon'
         plural: 'gallons'
         abbreviation: 'gal'
         aliases: {  }
+        scaling:
+          smaller_unit: 'us liquid quart'
+          smaller_multiple: 4
       pound:
         name: 'pound'
         plural: 'pounds'
         abbreviation: 'lb'
         aliases: {  }
+        scaling:
+          max_accuracy: 0.0625
+          smaller_unit: 'ounce'
+          smaller_multiple: 16
       ounce:
         name: 'ounce'
         plural: 'ounces'
         abbreviation: 'oz'
         aliases: {  }
+        scaling:
+          max_accuracy: 0.25
+          larger_unit: 'pound'
+          larger_divisor: 16
+          scale_up_at: 4
       us fluid ounce:
         name: 'fluid ounce'
         plural: 'fluid ounces'
         abbreviation: 'fl oz'
         aliases: {  }
+        scaling:
+          max_accuracy: 0.25
+          larger_unit: 'cup'
+          larger_divisor: 8
+          scale_up_at: 4
   si:
     name: 'SI/Metric'
     units:
@@ -46,41 +77,81 @@ unit_sets:
         plural: 'milliliters'
         abbreviation: 'ml'
         aliases: {  }
+        scaling:
+          max_accuracy: .5
+          larger_unit: centiliter
+          larger_multiple: 10
       centiliter:
         name: 'centiliter'
         plural: 'centiliters'
         abbreviation: 'cl'
         aliases: {  }
-      liter:
-        name: 'liter'
-        plural: 'liters'
-        abbreviation: 'l'
-        aliases: {  }
+        scaling:
+          max_accuracy: 0.1
+          smaller_unit: milliliter
+          smaller_multiple: 10
+          larger_unit: deciliter
+          larger_multiple: 10
       deciliter:
         name: 'deciliter'
         plural: 'deciliters'
         abbreviation: 'dl'
         aliases: {  }
+        scaling:
+          max_accuracy: 0.1
+          smaller_unit: centiliter
+          smaller_multiple: 10
+          larger_unit: liter
+          larger_multiple: 10
+      liter:
+        name: 'liter'
+        plural: 'liters'
+        abbreviation: 'l'
+        aliases: {  }
+        scaling:
+          max_accuracy: 0.1
+          smaller_unit: deciliter
+          smaller_multiple: 10
       milligram:
         name: 'milligram'
         plural: 'milligrams'
         abbreviation: 'mg'
         aliases: {  }
+        scaling:
+          max_accuracy: 1
+          larger_unit: gram
+          larger_multiple: 1000
       gram:
         name: 'gram'
         plural: 'grams'
         abbreviation: 'g'
         aliases: {  }
+        scaling:
+          max_accuracy: 0.5
+          smaller_unit: milligram
+          smaller_multiple: 1000
+          larger_unit: centigram
+          larger_multiple: 100
       centigram:
         name: 'centigram'
         plural: 'centigrams'
         abbreviation: 'cg'
         aliases: {  }
+        scaling:
+          max_accuracy: 0.1
+          smaller_unit: gram
+          smaller_multiple: 100
+          larger_unit: kilogram
+          larger_multiple: 10
       kilogram:
         name: 'kilogram'
         plural: 'kilograms'
         abbreviation: 'kg'
         aliases: {  }
+        scaling:
+          max_accuracy: 0.1
+          smaller_unit: centigram
+          smaller_multiple: 100
   common:
     name: 'Common units'
     units:
@@ -91,12 +162,23 @@ unit_sets:
         aliases:
           - 'tbsp'
           - 'tb'
+        scaling:
+          max_accuracy: 0.3333
+          smaller_unit: 'teaspoon'
+          smaller_multiple: 3
+          larger_unit: cup
+          larger_divisor: 16
+          scale_up_at: 4
       teaspoon:
         name: 'teaspoon'
         plural: 'teaspoons'
         abbreviation: 't'
         aliases:
           - 'tsp'
+        scaling:
+          max_accuracy: 0.125
+          larger_unit: 'tablespoon'
+          larger_divisor: 3
       slice:
         name: 'slice'
         plural: 'slices'
@@ -107,7 +189,9 @@ unit_sets:
         plural: 'cloves'
         abbreviation: 'clv'
         aliases: {  }
-      load:
+        scaling:
+          max_accuracy: 0.5
+      loaf:
         name: 'loaf'
         plural: 'loaves'
         abbreviation: 'lf'
@@ -117,6 +201,8 @@ unit_sets:
         plural: 'pinches'
         abbreviation: 'pn'
         aliases: {  }
+        scaling:
+          max_accuracy: 1
       package:
         name: 'package'
         plural: 'packages'
@@ -134,6 +220,8 @@ unit_sets:
         plural: 'drops'
         abbreviation: 'dr'
         aliases: {  }
+        scaling:
+          max_accuracy: 1
       bunch:
         name: 'bunch'
         plural: 'bunches'
@@ -144,6 +232,8 @@ unit_sets:
         plural: 'dashes'
         abbreviation: 'ds'
         aliases: {  }
+        scaling:
+          max_accuracy: 1
       carton:
         name: 'carton'
         plural: 'cartons'

@@ -80,6 +80,81 @@ function ingredient_is_page(Ingredient $ingredient) {
 }
 
 /**
+ * Converts an ingredient's quantity from decimal to fraction when scaled.
+ *
+ * Unlike ingredient_quantity_from_decimal, this does not attempt to reconstruct
+ * the original fraction, but instead can be set for sensible defaults.
+ *
+ * @param float $ingredient_quantity
+ *   The ingredient quantity formatted as a decimal.
+ * @param string $fraction_format
+ *   A string representing the fraction format, used by sprintf().
+ * @param float $max_accuracy
+ *   A float representing the fractional accuracy of the unit.
+ *
+ * @return string
+ *   The ingredient quantity formatted as a fraction.
+ */
+function ingredient_quantity_from_scale($ingredient_quantity, $fraction_format = '{%d} %d&frasl;%d', $max_accuracy = 0.125) {
+  if (is_numeric($ingredient_quantity)) {
+    // Store a string version of the parameter.
+    $quantity_string = (string) $ingredient_quantity;
+    // If the unit must be an integer, round it and stop.
+    if ($max_accuracy == 1) {
+      $ingredient_quantity = (string) round(abs($ingredient_quantity));
+    }
+    elseif (strpos($quantity_string, '.')) {
+      $ingredient_quantity = abs($ingredient_quantity);
+      $whole = floor($ingredient_quantity);
+      $fraction = ($ingredient_quantity - $whole);
+
+      if ($fraction) {
+        // Continued fractions.
+        // See https://stackoverflow.com/questions/14330713/converting-float-decimal-to-fraction
+        $numerator = 1;
+        $h2 = 0;
+        $denominator = 0;
+        $k2 = 1;
+        $b = 1 / $fraction;
+        do {
+          $b = 1 / $b;
+          $a = floor($b);
+          $aux = $numerator;
+          $numerator = $a * $numerator + $h2;
+          $h2 = $aux;
+          $aux = $denominator;
+          $denominator = $a * $denominator + $k2;
+          $k2 = $aux;
+          $b = $b - $a;
+        } while (abs($fraction - $numerator / $denominator) > $max_accuracy);
+
+        // If numerator = denominator, increment whole and reset numerator.
+        if ($numerator == $denominator) {
+          $whole++;
+          $fraction = 0;
+        }
+        elseif (!$numerator) {
+          $fraction = 0;
+        }
+      }
+      // After this, the fraction may be zero, in which case we just want the integer portion.
+      $ingredient_quantity = $fraction ? sprintf($fraction_format, $whole, $numerator, $denominator) : (string) $whole;
+
+      if (($whole == 0) && (strpos($ingredient_quantity, '{') >= 0)) {
+        // Remove anything in curly braces.
+        $ingredient_quantity = preg_replace('/{.*}/', '', $ingredient_quantity);
+      }
+      else {
+        // Remove just the curly braces, but keep everything between them.
+        $ingredient_quantity = preg_replace('/{|}/', '', $ingredient_quantity);
+      }
+    }
+  }
+
+  return Xss::filterAdmin(trim($ingredient_quantity));
+}
+
+/**
  * Converts an ingredient's quantity from decimal to fraction.
  *
  * @param float $ingredient_quantity

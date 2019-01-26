@@ -99,6 +99,15 @@ class IngredientFormatter extends EntityReferenceFormatterBase {
     $unit_list = $this->getConfiguredUnits();
     $elements = [];
 
+    // Get scaling adjustment, if any.
+    $adjusted_yield = recipe_get_yield();
+    if ($adjusted_yield) {
+      $original_yield = $items->getParent()->getValue()->recipe_yield_amount->value;
+      // Original yield defaults to 1.
+      $original_yield = floatval($original_yield) ? floatval($original_yield) : 1.0;
+      $scale = ($original_yield !== $adjusted_yield ? ($adjusted_yield / $original_yield) : NULL);
+    }
+
     foreach ($this->getEntitiesToView($items, $langcode) as $delta => $entity) {
       // Sanitize the name and note.
       $name = Xss::filter($entity->label(), []);
@@ -111,8 +120,49 @@ class IngredientFormatter extends EntityReferenceFormatterBase {
         $name = Link::fromTextAndUrl($name, $url);
       }
 
+      // Get the unit before quantity so we can up- or down-scale.
+      $unit = isset($unit_list[$items[$delta]->unit_key]) ? $unit_list[$items[$delta]->unit_key] : [];
+
       if ($items[$delta]->quantity > 0) {
-        $formatted_quantity = ingredient_quantity_from_decimal($items[$delta]->quantity, $fraction_format);
+        $quantity = $items[$delta]->quantity;
+        if (isset($scale)) {
+          // Raw, scaled quantity value.
+          $quantity = $quantity * $scale;
+          // If there is a potential conversion.
+          if (isset($unit['scaling'])) {
+            // Convenience.
+            $scaling = $unit['scaling'];
+            // Scale up or down using while loops in case of multiple-step scaling.
+            if ($scale > 1) {
+              // Use a bigger unit if 2 or more of that larger unit.
+              while (isset($scaling['larger_unit'])
+                && isset($unit_list[$scaling['larger_unit']])
+                && $quantity >= (isset($scaling['scale_up_at']) ? $scaling['scale_up_at'] : ($scaling['larger_divisor'] * 2)))
+              {
+                $quantity = $quantity / $scaling['larger_divisor'];
+                $unit = $unit_list[$scaling['larger_unit']];
+                $scaling = isset($unit['scaling']) ? $unit['scaling'] : [];
+              }
+            }
+            else {
+              // Use a smaller unit if quantity is less than half of current unit.
+              while (isset($scaling['smaller_unit'])
+                && isset($unit_list[$scaling['smaller_unit']])
+                && ($quantity < 0.5))
+              {
+                $quantity = $quantity * $scaling['smaller_multiple'];
+                $unit = $unit_list[$scaling['smaller_unit']];
+                $scaling = isset($unit['scaling']) ? $unit['scaling'] : [];
+              }
+            }
+          }
+          $max_accuracy = isset($scaling['max_accuracy']) ? $scaling['max_accuracy'] : RECIPE_MAX_ACCURACY;
+          $formatted_quantity = ingredient_quantity_from_scale($quantity, $fraction_format, $max_accuracy);
+        }
+        else {
+          $formatted_quantity = ingredient_quantity_from_decimal($quantity, $fraction_format);
+
+        }
       }
       else {
         $formatted_quantity = '&nbsp;';
@@ -122,7 +172,6 @@ class IngredientFormatter extends EntityReferenceFormatterBase {
       // printed in any case.
       $unit_name = '';
       $unit_abbreviation = '';
-      $unit = isset($unit_list[$items[$delta]->unit_key]) ? $unit_list[$items[$delta]->unit_key] : [];
       if (!empty($unit['abbreviation'])) {
         $unit_name = $items[$delta]->quantity > 1 ? $unit['plural'] : $unit['name'];
         $unit_abbreviation = $unit['abbreviation'];
